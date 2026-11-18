@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+/* Bảng màu dùng chung (đổi ở đây để đổi giao diện toàn app) */
+:root {
+  --background: #fafaf9;
+  --foreground: #1c1917;
+  --card: #ffffff;
+  --muted: #f5f5f4;
+  --muted-foreground: #78716c;
+  --border: #e7e5e4;
+  --primary: #4f46e5;
+  --primary-foreground: #ffffff;
+  --accent: #eef2ff;
+  --accent-foreground: #3730a3;
+  --danger: #dc2626;
+  --success: #16a34a;
+  --warning: #d97706;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0c0a09;
+    --foreground: #f5f5f4;
+    --card: #1c1917;
+    --muted: #292524;
+    --muted-foreground: #a8a29e;
+    --border: #2e2a27;
+    --primary: #818cf8;
+    --primary-foreground: #0c0a09;
+    --accent: #1e1b4b;
+    --accent-foreground: #c7d2fe;
+    --danger: #f87171;
+    --success: #4ade80;
+    --warning: #fbbf24;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --font-sans: var(--font-inter);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+* {
+  border-color: var(--border);
+}
+
+/* Hiển thị Markdown (kết quả AI, nội dung ghi chú) */
+.markdown {
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+.markdown > * + * {
+  margin-top: 0.75em;
+}
+.markdown h1,
+.markdown h2,
+.markdown h3 {
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: 1.2em;
+}
+.markdown h1 { font-size: 1.25rem; }
+.markdown h2 { font-size: 1.125rem; }
+.markdown h3 { font-size: 1rem; }
+.markdown ul { list-style: disc; padding-left: 1.4em; }
+.markdown ol { list-style: decimal; padding-left: 1.4em; }
+.markdown li + li { margin-top: 0.25em; }
+.markdown a { color: var(--primary); text-decoration: underline; }
+.markdown code {
+  background: var(--muted);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+  font-size: 0.875em;
+}
+.markdown pre {
+  background: var(--muted);
+  border-radius: 8px;
+  padding: 0.75em 1em;
+  overflow-x: auto;
+}
+.markdown pre code { background: none; padding: 0; }
+.markdown blockquote {
+  border-left: 3px solid var(--border);
+  padding-left: 0.9em;
+  color: var(--muted-foreground);
+}
+.markdown table { border-collapse: collapse; display: block; overflow-x: auto; }
+.markdown th,
+.markdown td { border: 1px solid var(--border); padding: 0.35em 0.6em; text-align: left; }
