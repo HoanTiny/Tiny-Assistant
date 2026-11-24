@@ -1,0 +1,11 @@
+# Caddy tự xin và gia hạn chứng chỉ HTTPS (Let's Encrypt) cho tên miền trong biến DOMAIN.
+{$DOMAIN} {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+	reverse_proxy app:3000 {
+		# Đẩy dữ liệu về trình duyệt ngay (chat AI, bản tin chạy dạng stream)
+		flush_interval -1
+	}
+}

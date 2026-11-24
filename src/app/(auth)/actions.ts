@@ -7,6 +7,15 @@ import { getDb, schema } from "@/lib/db";
 import { hasAnyUser } from "@/lib/auth/dal";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { createSession, deleteSession } from "@/lib/auth/session";
+import {
+  checkSetupToken,
+  clearFailures,
+  clientIp,
+  failureDelay,
+  lockedMinutes,
+  recordFailure,
+  setupGuard,
+} from "@/lib/auth/guards";
 
 export type FormState = { error?: string } | undefined;
 
@@ -16,9 +25,25 @@ const setupSchema = z.object({
   password: z.string().min(8, "Mật khẩu tối thiểu 8 ký tự"),
 });
 
-/** Tạo tài khoản chủ sở hữu đầu tiên. Chỉ chạy được khi app chưa có user nào. */
+/** Tạo tài khoản chủ sở hữu đầu tiên. Chỉ chạy được khi app chưa có user nào và nhập đúng mã thiết lập. */
 export async function setupOwner(_prev: FormState, formData: FormData): Promise<FormState> {
   if (await hasAnyUser()) return { error: "App đã được thiết lập. Hãy đăng nhập." };
+
+  const guard = setupGuard();
+  if (guard === "locked") {
+    return { error: "Trang thiết lập đang khóa. Đặt SETUP_TOKEN trong file .env rồi khởi động lại app." };
+  }
+  if (guard === "token") {
+    const keys = [`setup:${await clientIp()}`];
+    const wait = lockedMinutes(keys);
+    if (wait) return { error: `Nhập sai quá nhiều lần. Thử lại sau ${wait} phút.` };
+    if (!checkSetupToken(formData.get("setupToken"))) {
+      recordFailure(keys);
+      await failureDelay();
+      return { error: "Mã thiết lập không đúng." };
+    }
+    clearFailures(keys);
+  }
 
   const parsed = setupSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message };
@@ -54,6 +79,11 @@ export async function login(_prev: FormState, formData: FormData): Promise<FormS
   const parsed = loginSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: "Nhập email và mật khẩu" };
 
+  // Khóa tạm sau 5 lần sai trong 15 phút, tính riêng theo IP và theo email
+  const keys = [`login-ip:${await clientIp()}`, `login-email:${parsed.data.email}`];
+  const wait = lockedMinutes(keys);
+  if (wait) return { error: `Đăng nhập sai quá nhiều lần. Thử lại sau ${wait} phút.` };
+
   const db = await getDb();
   const [user] = await db
     .select()
@@ -62,9 +92,12 @@ export async function login(_prev: FormState, formData: FormData): Promise<FormS
     .limit(1);
 
   if (!user || !(await verifyPassword(parsed.data.password, user.passwordHash))) {
+    recordFailure(keys);
+    await failureDelay();
     return { error: "Email hoặc mật khẩu không đúng" };
   }
 
+  clearFailures(keys);
   await createSession(user.id);
   redirect("/");
 }

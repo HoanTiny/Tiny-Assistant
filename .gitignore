@@ -46,3 +46,6 @@ next-env.d.ts
 
 # cấu hình Claude Code cục bộ
 /.claude
+
+# bản sao lưu database trên server
+/backups

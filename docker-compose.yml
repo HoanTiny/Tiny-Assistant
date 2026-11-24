@@ -1,15 +1,19 @@
 # Chạy trên server:  docker compose up -d --build
-# Cần file .env (chép từ .env.example) cùng thư mục, có APP_SECRET, POSTGRES_PASSWORD và API key.
+# Cần file .env (chép từ .env.example) cùng thư mục. Xem hướng dẫn đầy đủ trong DEPLOY.md.
+#
+#   caddy (cổng 80/443, tự lấy chứng chỉ HTTPS) → app (Next.js, cổng 3000 nội bộ) → db (PostgreSQL)
+#
+# Chỉ Caddy mở cổng ra internet; app và database chỉ nói chuyện với nhau trong mạng nội bộ của Docker.
 services:
   app:
     build: .
     restart: unless-stopped
     env_file: .env
     environment:
-      DATABASE_URL: postgres://workhub:${POSTGRES_PASSWORD}@db:5432/workhub
+      DATABASE_URL: postgres://workhub:${POSTGRES_PASSWORD:?Cần đặt POSTGRES_PASSWORD trong .env}@db:5432/workhub
       TZ: ${TZ:-Asia/Ho_Chi_Minh}
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     depends_on:
       db:
         condition: service_healthy
@@ -21,6 +25,7 @@ services:
       POSTGRES_USER: workhub
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: workhub
+      TZ: ${TZ:-Asia/Ho_Chi_Minh}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -29,5 +34,23 @@ services:
       timeout: 5s
       retries: 10
 
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN:?Cần đặt DOMAIN trong .env (tên miền trỏ về VPS)}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+
 volumes:
   pgdata:
+  caddy_data:
+  caddy_config:

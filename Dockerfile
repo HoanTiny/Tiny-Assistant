@@ -13,6 +13,8 @@ RUN npm run build
 
 FROM node:22-alpine AS run
 WORKDIR /app
+# Dữ liệu múi giờ: để TZ=Asia/Ho_Chi_Minh có tác dụng (bản tin 7h sáng theo giờ Việt Nam)
+RUN apk add --no-cache tzdata
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     PORT=3000 \

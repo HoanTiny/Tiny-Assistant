@@ -63,6 +63,8 @@ Muốn thêm nút AI mới cho item thì thêm một mục vào `ITEM_ACTIONS` t
 
 ## Đưa lên mạng (hosting)
 
+Hướng dẫn từng bước đưa lên VPS (Docker, HTTPS, sao lưu): xem [DEPLOY.md](DEPLOY.md).
+
 "Host" là cho app chạy 24/7 trên một máy chủ, để bạn mở được từ điện thoại hay máy khác ở bất cứ đâu.
 
 | Cách | Chi phí | Hợp khi |
