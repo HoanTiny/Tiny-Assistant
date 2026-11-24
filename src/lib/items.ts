@@ -58,7 +58,7 @@ export async function createItem(
 export async function updateItem(
   ctx: Ctx,
   id: string,
-  values: Partial<Pick<Item, "title" | "content" | "status" | "priority" | "dueAt" | "data" | "archivedAt">>,
+  values: Partial<Pick<Item, "type" | "title" | "content" | "status" | "priority" | "dueAt" | "data" | "archivedAt">>,
 ): Promise<Item | null> {
   const db = await getDb();
   const [item] = await db
@@ -124,6 +124,31 @@ export async function addItemTags(workspaceId: string, itemId: string, names: st
     .insert(itemTags)
     .values(rows.map((t) => ({ itemId, tagId: t.id })))
     .onConflictDoNothing();
+}
+
+/** Bỏ một tag khỏi item (tag vẫn còn trong danh sách tag của workspace để dùng lại) */
+export async function removeItemTag(workspaceId: string, itemId: string, name: string) {
+  const db = await getDb();
+  const { tags, itemTags } = schema;
+  const [tag] = await db
+    .select({ id: tags.id })
+    .from(tags)
+    .where(and(eq(tags.workspaceId, workspaceId), eq(tags.name, name.trim().toLowerCase())))
+    .limit(1);
+  if (!tag) return;
+  await db.delete(itemTags).where(and(eq(itemTags.itemId, itemId), eq(itemTags.tagId, tag.id)));
+}
+
+/** Các mục đã ẩn (lưu trữ), mới ẩn nhất lên đầu */
+export async function listArchived(workspaceId: string, limit = 200): Promise<Item[]> {
+  const db = await getDb();
+  const { items } = schema;
+  return db
+    .select()
+    .from(items)
+    .where(and(eq(items.workspaceId, workspaceId), isNotNull(items.archivedAt)))
+    .orderBy(desc(items.archivedAt))
+    .limit(limit);
 }
 
 export async function getItemTags(itemIds: string[]): Promise<Map<string, string[]>> {

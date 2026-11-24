@@ -220,6 +220,13 @@ export async function runScheduledBriefs(now = new Date()): Promise<{ created: s
           if (content.trim()) {
             await saveBrief({ workspaceId: o.workspaceId, userId: o.userId }, kind, content, now);
             created.push(`${o.workspaceId}:${kind}`);
+            // Gửi bản tin về các chat Telegram đã liên kết (nếu có)
+            try {
+              const { notifyWorkspace } = await import("@/lib/telegram");
+              await notifyWorkspace(o.workspaceId, `# ${briefTitle(kind, now)}\n\n${content}`);
+            } catch (err) {
+              console.error("[brief] Không gửi được bản tin qua Telegram:", err);
+            }
           }
         } catch (err) {
           console.error(`[brief] Không tạo được bản tin ${kind}:`, err);

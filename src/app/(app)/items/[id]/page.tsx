@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Archive, ArrowUpRight, ChevronRight, Link2 } from "lucide-react";
+import { Suspense } from "react";
+import { ArrowLeft, ArrowUpRight, Link2 } from "lucide-react";
 import { requireUser } from "@/lib/auth/dal";
 import { getItem, getItemTags, getLinkedItems } from "@/lib/items";
 import { ITEM_ACTIONS } from "@/lib/ai/prompts";
@@ -10,11 +11,11 @@ import { ItemAIPanel } from "@/components/ai/item-ai-panel";
 import { formatDateTime } from "@/lib/utils";
 import { archiveItem } from "../../actions";
 import { ItemEditor } from "./item-editor";
+import { ArchiveButton } from "./archive-button";
 
 const LINK_LABEL: Record<string, string> = { derived_from: "Tạo từ", related: "Liên quan" };
 
-/** Trang chi tiết dùng chung cho mọi loại item (task, note, ...) */
-export default async function ItemPage({ params }: PageProps<"/items/[id]">) {
+async function ItemContent({ params }: { params: PageProps<"/items/[id]">["params"] }) {
   const { id } = await params;
   const user = await requireUser();
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
@@ -28,75 +29,56 @@ export default async function ItemPage({ params }: PageProps<"/items/[id]">) {
   const actions = Object.entries(ITEM_ACTIONS).map(([key, a]) => ({ key, label: a.label, description: a.description }));
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-5">
-      {/* Thanh breadcrumb tối giản */}
+    <div className="flex w-full flex-col gap-4">
+      {/* Thanh trên gọn nhẹ */}
       <div className="flex items-center justify-between gap-3">
-        <nav aria-label="Điều hướng" className="flex min-w-0 items-center gap-1.5 text-sm">
-          <Link
-            href={mod?.href ?? "/"}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 font-medium text-muted-foreground transition-colors hover:bg-card hover:text-foreground"
-          >
-            <ArrowLeft size={15} />
-            <span>{mod?.label ?? "Quay lại"}</span>
-          </Link>
-          <ChevronRight size={14} className="shrink-0 text-muted-foreground/50" />
-          <span className="truncate font-semibold text-foreground/80">{item.title}</span>
-        </nav>
+        <Link
+          href={mod?.href ?? "/"}
+          className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-card hover:text-foreground"
+        >
+          <ArrowLeft size={16} />
+          <span>{mod?.label ?? "Quay lại"}</span>
+        </Link>
 
-        <form action={archiveItem.bind(null, item.id)} className="shrink-0">
-          <button
-            type="submit"
-            title="Mục này sẽ không còn hiện trong danh sách. Dữ liệu vẫn được giữ lại."
-            className="inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-danger/10 hover:text-danger"
-          >
-            <Archive size={14} />
-            <span>Ẩn khỏi danh sách</span>
-          </button>
-        </form>
+        <ArchiveButton action={archiveItem.bind(null, item.id)} />
       </div>
 
-      {/* Bố cục studio 2 cột: tài liệu chính + AI Copilot bên phải */}
-      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
-        <div className="lg:col-span-7 xl:col-span-8">
-          <ItemEditor
-            item={{
-              id: item.id,
-              type: item.type,
-              title: item.title,
-              content: item.content,
-              status: item.status,
-              priority: item.priority,
-              dueAt: item.dueAt ? toDateInput(item.dueAt) : null,
-            }}
-            typeLabel={mod?.label ?? item.type}
-            tags={tags}
-            createdLabel={formatDateTime(item.createdAt)}
-            updatedLabel={formatDateTime(item.updatedAt)}
-          />
-        </div>
+      {/* Bố cục rộng toàn khung: vùng viết lớn bên trái + cột AI gọn 360px bên phải */}
+      <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <ItemEditor
+          item={{
+            id: item.id,
+            type: item.type,
+            title: item.title,
+            content: item.content,
+            status: item.status,
+            priority: item.priority,
+            dueAt: item.dueAt ? toDateInput(item.dueAt) : null,
+          }}
+          tags={tags}
+          createdLabel={formatDateTime(item.createdAt)}
+          updatedLabel={formatDateTime(item.updatedAt)}
+        />
 
-        <aside className="space-y-4 lg:sticky lg:top-6 lg:col-span-5 xl:col-span-4">
+        <aside className="space-y-4 xl:sticky xl:top-6">
           <ItemAIPanel itemId={item.id} actions={actions} />
           {linked.length > 0 && (
-            <Card className="rounded-3xl border-border/80 p-5 shadow-[0_2px_16px_-6px_rgba(0,0,0,0.06)]">
-              <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                <Link2 size={14} className="text-primary" /> Mục liên kết ({linked.length})
+            <Card className="p-5">
+              <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <Link2 size={14} className="text-primary" /> Liên kết ({linked.length})
               </div>
-              <ul className="space-y-2">
+              <ul className="space-y-1.5">
                 {linked.map((l) => (
                   <li key={l.id}>
                     <Link
                       href={`/items/${l.id}`}
-                      className="group flex items-center justify-between gap-2 rounded-2xl border border-border/70 bg-muted/25 px-3 py-2.5 text-sm transition-all hover:border-primary/40 hover:bg-muted/60"
+                      className="group flex items-center justify-between gap-2 rounded-xl px-2.5 py-2 text-sm transition-colors hover:bg-muted/60"
                     >
                       <span className="flex min-w-0 items-center gap-2">
                         <Badge>{LINK_LABEL[l.kind] ?? l.kind}</Badge>
-                        <span className="truncate font-semibold text-foreground group-hover:text-primary">{l.title}</span>
+                        <span className="truncate font-medium text-foreground group-hover:text-primary">{l.title}</span>
                       </span>
-                      <ArrowUpRight
-                        size={14}
-                        className="shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-primary"
-                      />
+                      <ArrowUpRight size={14} className="shrink-0 text-muted-foreground group-hover:text-primary" />
                     </Link>
                   </li>
                 ))}
@@ -106,6 +88,22 @@ export default async function ItemPage({ params }: PageProps<"/items/[id]">) {
         </aside>
       </div>
     </div>
+  );
+}
+
+/** Trang chi tiết dùng chung cho mọi loại item (task, note, ...) */
+export default function ItemPage({ params }: PageProps<"/items/[id]">) {
+  return (
+    <Suspense
+      fallback={
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_360px]" aria-busy="true">
+          <div className="h-[520px] animate-pulse rounded-2xl bg-muted" />
+          <div className="h-52 animate-pulse rounded-2xl bg-muted" />
+        </div>
+      }
+    >
+      <ItemContent params={params} />
+    </Suspense>
   );
 }
 

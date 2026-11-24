@@ -7,6 +7,7 @@
  *   3. Dữ liệu dùng chung bảng `items` với type = itemType, trường riêng để trong `data`.
  */
 import {
+  Archive,
   CheckSquare,
   LayoutDashboard,
   Newspaper,
@@ -38,6 +39,7 @@ export const MODULES: ModuleDef[] = [
 
 export const SYSTEM_LINKS: ModuleDef[] = [
   { key: "integrations", label: "Kết nối", href: "/integrations", icon: Plug },
+  { key: "archived", label: "Đã ẩn", href: "/archived", icon: Archive },
   { key: "settings", label: "Cài đặt", href: "/settings", icon: Settings },
 ];
 
