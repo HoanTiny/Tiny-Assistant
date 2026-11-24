@@ -36,10 +36,10 @@ export function BriefPanel({
   const content = output ?? existing?.content ?? "";
 
   return (
-    <Card className="flex flex-col p-5">
+    <Card className="flex flex-col p-6">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
-          <h2 className="font-semibold">{title}</h2>
+          <h2 className="text-lg font-bold">{title}</h2>
           <p className="text-xs text-muted-foreground">
             {existing && output === null ? `Tạo lúc ${formatDateTime(existing.updatedAt)}` : description}
           </p>
@@ -57,7 +57,7 @@ export function BriefPanel({
       </div>
 
       {content ? (
-        <Markdown>{content}</Markdown>
+        <Markdown className="letter">{content}</Markdown>
       ) : streaming ? (
         <p className="animate-pulse text-sm text-muted-foreground">AI đang đọc công việc của bạn...</p>
       ) : (

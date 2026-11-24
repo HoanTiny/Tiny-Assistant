@@ -1,10 +1,10 @@
 "use client";
 
 import { useActionState } from "react";
-import { Button, Card, Input, Label } from "@/components/ui";
+import { Button, Input, Label } from "@/components/ui";
 import type { FormState } from "./actions";
 
-type Field = { name: string; label: string; type?: string; autoComplete?: string };
+type Field = { name: string; label: string; type?: string; autoComplete?: string; placeholder?: string };
 
 export function AuthForm({
   action,
@@ -22,18 +22,26 @@ export function AuthForm({
   const [state, formAction, pending] = useActionState(action, undefined);
 
   return (
-    <Card className="p-6">
-      <h1 className="text-lg font-semibold">{title}</h1>
-      {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
-      <form action={formAction} className="mt-5 space-y-4">
+    <div>
+      <h1 className="text-3xl font-bold">{title}</h1>
+      {description && <p className="mt-1 font-semibold text-foreground">{description}</p>}
+      <form action={formAction} className="mt-8 space-y-5">
         {fields.map((f) => (
           <div key={f.name} className="space-y-1.5">
-            <Label htmlFor={f.name}>{f.label}</Label>
-            <Input id={f.name} name={f.name} type={f.type ?? "text"} autoComplete={f.autoComplete} required />
+            <Label htmlFor={f.name} className="text-muted-foreground">{f.label}</Label>
+            <Input
+              id={f.name}
+              name={f.name}
+              type={f.type ?? "text"}
+              autoComplete={f.autoComplete}
+              placeholder={f.placeholder}
+              required
+              
+            />
           </div>
         ))}
         {state?.error && (
-          <p role="alert" className="text-sm text-danger">
+          <p role="alert" className="rounded-xl bg-danger/10 px-3.5 py-2.5 text-sm font-medium text-danger">
             {state.error}
           </p>
         )}
@@ -41,6 +49,6 @@ export function AuthForm({
           {pending ? "Đang xử lý..." : submitLabel}
         </Button>
       </form>
-    </Card>
+    </div>
   );
 }

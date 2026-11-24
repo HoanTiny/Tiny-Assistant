@@ -13,10 +13,11 @@ export default async function LoginPage() {
   return (
     <AuthForm
       action={login}
-      title="Đăng nhập"
+      title="Chào mừng trở lại"
+      description="Đăng nhập để tiếp tục công việc của bạn."
       submitLabel="Đăng nhập"
       fields={[
-        { name: "email", label: "Email", type: "email", autoComplete: "email" },
+        { name: "email", label: "Email", type: "email", autoComplete: "email", placeholder: "ban@congty.vn" },
         { name: "password", label: "Mật khẩu", type: "password", autoComplete: "current-password" },
       ]}
     />

@@ -24,7 +24,7 @@ export default async function IntegrationsPage() {
         title="Kết nối dịch vụ"
         description="Khung kết nối đã sẵn sàng (lưu token mã hóa, mỗi dịch vụ một mục). Từng kết nối sẽ được làm khi bạn cần."
       />
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {INTEGRATIONS.map((i) => {
           const missing = missingEnv(i);
           return (

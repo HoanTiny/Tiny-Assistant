@@ -14,7 +14,7 @@ export type ItemActionKey = "evaluate" | "summarize" | "breakdown" | "improve";
 export const ITEM_ACTIONS: Record<ItemActionKey, { label: string; description: string; instruction: string }> = {
   evaluate: {
     label: "Đánh giá",
-    description: "Chấm điểm, chỉ ra điểm mạnh/yếu và rủi ro",
+    description: "Chấm điểm 1–10, nêu điểm mạnh, rủi ro và việc nên làm tiếp",
     instruction: `Đánh giá mục này. Trả về:
 1. **Điểm tổng thể** (1–10) và một câu lý do.
 2. **Điểm mạnh** (tối đa 3 ý).
@@ -23,18 +23,18 @@ export const ITEM_ACTIONS: Record<ItemActionKey, { label: string; description: s
   },
   summarize: {
     label: "Tóm tắt",
-    description: "Tóm tắt ý chính",
+    description: "Rút gọn thành tối đa 5 ý chính",
     instruction: "Tóm tắt mục này trong tối đa 5 gạch đầu dòng, giữ lại số liệu và hạn chót quan trọng.",
   },
   breakdown: {
     label: "Chia nhỏ việc",
-    description: "Tách thành checklist các bước cụ thể",
+    description: "Tách thành checklist các bước nhỏ, mỗi bước 30–90 phút",
     instruction:
-      "Chia mục này thành checklist các bước cụ thể, mỗi bước làm được trong khoảng 30–90 phút, theo thứ tự nên làm. Dùng định dạng `- [ ] bước`.",
+      "Chia mục này thành checklist các bước cụ thể, mỗi bước làm được trong khoảng 30–90 phút, theo thứ tự nên làm. Có thể nhóm bằng tiêu đề `###`; mỗi bước là một dòng phẳng dạng `- [ ] bước (ước lượng thời gian)`, không lồng thêm gạch đầu dòng.",
   },
   improve: {
     label: "Viết lại hay hơn",
-    description: "Viết lại rõ ràng, mạch lạc hơn",
+    description: "Viết lại rõ ràng, chuyên nghiệp hơn, giữ nguyên ý",
     instruction:
       "Viết lại nội dung mục này cho rõ ràng, mạch lạc, chuyên nghiệp hơn, giữ nguyên ý. Chỉ trả về nội dung đã viết lại.",
   },

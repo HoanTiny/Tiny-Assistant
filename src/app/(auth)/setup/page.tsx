@@ -13,8 +13,8 @@ export default async function SetupPage() {
   return (
     <AuthForm
       action={setupOwner}
-      title="Chào mừng đến WorkHub"
-      description="Tạo tài khoản chủ sở hữu. Chỉ làm một lần, sau đó trang này sẽ bị khóa."
+      title="Thiết lập WorkHub"
+      description="Tạo tài khoản chủ sở hữu. Bước này chỉ làm một lần, sau đó trang sẽ tự khóa."
       submitLabel="Tạo tài khoản"
       fields={[
         { name: "name", label: "Tên của bạn", autoComplete: "name" },

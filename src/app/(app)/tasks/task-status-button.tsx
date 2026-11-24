@@ -20,13 +20,13 @@ export function TaskStatusButton({ id, status }: { id: string; status: string })
       aria-label={`Trạng thái: ${LABEL[status] ?? status}. Bấm để đổi`}
       className={
         status === "done"
-          ? "text-success"
+          ? "text-primary"
           : status === "doing"
-            ? "text-primary"
-            : "text-muted-foreground hover:text-foreground"
+            ? "text-sky-500"
+            : "text-muted-foreground hover:text-primary"
       }
     >
-      <Icon size={20} className={pending ? "animate-pulse" : ""} />
+      <Icon size={24} strokeWidth={1.8} className={pending ? "animate-pulse" : ""} />
     </button>
   );
 }

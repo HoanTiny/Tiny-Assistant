@@ -34,17 +34,19 @@ export function briefTitle(kind: BriefKind, now = new Date()): string {
 
 const PRIORITY = ["", "ưu tiên thấp", "ưu tiên TB", "ƯU TIÊN CAO"];
 
-function taskLine(t: Item): string {
+function taskLine(t: Item, now: Date): string {
+  const late = t.status !== "done" && t.dueAt && t.dueAt < now;
   const bits = [
     t.dueAt ? `hạn ${toLocalIso(t.dueAt)}` : null,
+    late ? "ĐÃ TRỄ HẠN" : null,
     PRIORITY[t.priority] || null,
     t.status === "doing" ? "đang làm" : null,
   ].filter(Boolean);
   return `- ${t.title}${bits.length ? ` (${bits.join(", ")})` : ""}`;
 }
 
-function section(title: string, list: Item[], empty = "(không có)"): string {
-  return `### ${title} [${list.length}]\n${list.length ? list.map(taskLine).join("\n") : empty}`;
+function section(title: string, list: Item[], now: Date, empty = "(không có)"): string {
+  return `### ${title} [${list.length}]\n${list.length ? list.map((t) => taskLine(t, now)).join("\n") : empty}`;
 }
 
 async function buildMessages(workspaceId: string, kind: BriefKind, userName: string, now: Date): Promise<ChatMessage[]> {
@@ -68,12 +70,12 @@ async function buildMessages(workspaceId: string, kind: BriefKind, userName: str
   if (kind === "daily") {
     const doneYesterday = done7.filter((t) => t.updatedAt >= startOfDay(addDays(now, -1)));
     data = [
-      section("Quá hạn", overdue),
-      section("Hạn hôm nay", today),
-      section("Đang làm", doing),
-      section("Ưu tiên cao chưa xong", high),
-      section("Sắp tới (7 ngày)", upcoming),
-      section("Đã xong từ hôm qua", doneYesterday),
+      section("Quá hạn", overdue, now),
+      section("Hạn hôm nay", today, now),
+      section("Đang làm", doing, now),
+      section("Ưu tiên cao chưa xong", high, now),
+      section("Sắp tới (7 ngày)", upcoming, now),
+      section("Đã xong từ hôm qua", doneYesterday, now),
       `### Ghi chú mới cập nhật\n${notes.map((n) => `- ${n.title}`).join("\n") || "(không có)"}`,
     ].join("\n\n");
     instruction = `Viết BẢN TIN BUỔI SÁNG cho ${userName}. Cấu trúc Markdown:
@@ -84,7 +86,9 @@ Tối đa 5 việc theo thứ tự nên làm, mỗi việc 1 dòng kèm lý do n
 ## Cần chú ý
 Việc quá hạn, rủi ro trễ, việc treo lâu ở "đang làm". Bỏ mục này nếu không có gì.
 ## Gợi ý sắp xếp thời gian
-Chia khung sáng / chiều hợp lý.
+Chia khung sáng / chiều hợp lý. Nếu bây giờ đã quá 12h, chỉ gợi ý cho phần còn lại của ngày (và ngày mai nếu đã tối),
+đặt tên mục là "Gợi ý cho phần còn lại của ngày".
+Việc có ghi "ĐÃ TRỄ HẠN" phải được nêu là đã trễ, không nói là "còn kịp".
 Tối đa 250 từ, giọng tích cực, thực tế. Nếu gần như không có dữ liệu, gợi ý người dùng nhập việc bằng Ctrl+K.`;
   } else {
     const db = await getDb();
@@ -94,10 +98,10 @@ Tối đa 250 từ, giọng tích cực, thực tế. Nếu gần như không c�
       .where(and(eq(schema.aiCalls.workspaceId, workspaceId), gte(schema.aiCalls.createdAt, addDays(now, -7))));
     const open = await listTasksBy(workspaceId, "open", 100, now);
     data = [
-      section("Đã xong 7 ngày qua", done7),
-      section("Đang quá hạn", overdue),
-      section("Đang làm", doing),
-      section("Hạn trong 7 ngày tới", week),
+      section("Đã xong 7 ngày qua", done7, now),
+      section("Đang quá hạn", overdue, now),
+      section("Đang làm", doing, now),
+      section("Hạn trong 7 ngày tới", week, now),
       `### Tổng số việc chưa xong: ${open.length}`,
       `### Ghi chú tạo/sửa trong tuần\n${notes.map((n) => `- ${n.title}`).join("\n") || "(không có)"}`,
       `### Token AI đã dùng 7 ngày qua: ${Number(usage?.tokens ?? 0)}`,

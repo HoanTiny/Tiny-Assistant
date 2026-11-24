@@ -11,7 +11,7 @@
 import "server-only";
 import type { z } from "zod";
 import { getDb, schema } from "@/lib/db";
-import { geminiProvider } from "./providers/gemini";
+import { geminiProvider, geminiWebSearch } from "./providers/gemini";
 import { openaiProvider } from "./providers/openai";
 import type { AIProvider, ChatMessage, ProviderId, ProviderInfo, ToolCall, ToolSpec } from "./types";
 
@@ -213,10 +213,48 @@ export async function generateJSON<T>(opts: Omit<RunOptions, "json">, shape: z.Z
 
 // ───────────────────────── Agent: AI gọi hàm của app ─────────────────────────
 
+export function canWebSearch(): boolean {
+  return geminiProvider.isConfigured();
+}
+
+/** Tra cứu web thời gian thực qua Gemini Google Search Grounding (có ghi nhật ký ai_calls) */
+export async function webSearch(
+  query: string,
+  user: { id: string | null; workspaceId: string },
+  signal?: AbortSignal,
+): Promise<{ answer: string; sources: { title: string; url: string }[] }> {
+  if (!geminiProvider.isConfigured()) {
+    throw new Error("Chưa cấu hình GEMINI_API_KEY để bật tìm kiếm web.");
+  }
+  const startedAt = Date.now();
+  const fallbackModel = process.env.GEMINI_SEARCH_MODEL || geminiProvider.defaultModel();
+  try {
+    const res = await geminiWebSearch(query, signal);
+    await logCall(
+      { provider: "gemini", model: res.model, feature: "tool:web_search", user, signal },
+      { status: "ok", inputTokens: res.inputTokens, outputTokens: res.outputTokens, startedAt },
+    );
+    return { answer: res.answer, sources: res.sources };
+  } catch (err) {
+    const aborted = signal?.aborted;
+    await logCall(
+      { provider: "gemini", model: fallbackModel, feature: "tool:web_search", user, signal },
+      {
+        status: aborted ? "aborted" : "error",
+        inputTokens: 0,
+        outputTokens: 0,
+        startedAt,
+        error: aborted ? undefined : describeAIError(err),
+      },
+    );
+    throw err;
+  }
+}
+
 export type AgentTool = ToolSpec & {
   /** Mô tả ngắn hiện cho người dùng khi AI đang dùng công cụ, ví dụ "Đang tìm công việc" */
   label: (args: Record<string, unknown>) => string;
-  run: (args: Record<string, unknown>) => Promise<unknown>;
+  run: (args: Record<string, unknown>, signal?: AbortSignal) => Promise<unknown>;
 };
 
 export type AgentEvent =
@@ -273,7 +311,7 @@ export async function runAgent(
         continue;
       }
       try {
-        const result = await tool.run(call.args);
+        const result = await tool.run(call.args, opts.signal);
         const link = (result as { link?: string } | null)?.link;
         opts.onEvent?.({ type: "tool", name: call.name, label: tool.label(call.args), ok: true, link });
         results.push({ call, result });

@@ -29,7 +29,7 @@ export default async function NotesPage() {
         {notes.length === 0 ? (
           <EmptyState>Chưa có ghi chú nào.</EmptyState>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {notes.map((n) => (
               <Link key={n.id} href={`/items/${n.id}`}>
                 <Card className="h-full p-4 transition-colors hover:bg-muted/50">

@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Archive, Link2 } from "lucide-react";
+import { ArrowLeft, Archive, ArrowUpRight, ChevronRight, Link2 } from "lucide-react";
 import { requireUser } from "@/lib/auth/dal";
 import { getItem, getItemTags, getLinkedItems } from "@/lib/items";
 import { ITEM_ACTIONS } from "@/lib/ai/prompts";
 import { moduleForItemType } from "@/lib/modules";
-import { Badge, Button, Card } from "@/components/ui";
+import { Badge, Card } from "@/components/ui";
 import { ItemAIPanel } from "@/components/ai/item-ai-panel";
 import { formatDateTime } from "@/lib/utils";
 import { archiveItem } from "../../actions";
@@ -28,20 +28,36 @@ export default async function ItemPage({ params }: PageProps<"/items/[id]">) {
   const actions = Object.entries(ITEM_ACTIONS).map(([key, a]) => ({ key, label: a.label, description: a.description }));
 
   return (
-    <>
-      <div className="mb-4 flex items-center justify-between gap-2">
-        <Link href={mod?.href ?? "/"} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-          <ArrowLeft size={16} /> {mod?.label ?? "Quay lại"}
-        </Link>
-        <form action={archiveItem.bind(null, item.id)}>
-          <Button type="submit" variant="ghost" size="sm" title="Lưu trữ (ẩn khỏi danh sách)">
-            <Archive size={14} /> Lưu trữ
-          </Button>
+    <div className="mx-auto flex max-w-6xl flex-col gap-5">
+      {/* Thanh breadcrumb tối giản */}
+      <div className="flex items-center justify-between gap-3">
+        <nav aria-label="Điều hướng" className="flex min-w-0 items-center gap-1.5 text-sm">
+          <Link
+            href={mod?.href ?? "/"}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 font-medium text-muted-foreground transition-colors hover:bg-card hover:text-foreground"
+          >
+            <ArrowLeft size={15} />
+            <span>{mod?.label ?? "Quay lại"}</span>
+          </Link>
+          <ChevronRight size={14} className="shrink-0 text-muted-foreground/50" />
+          <span className="truncate font-semibold text-foreground/80">{item.title}</span>
+        </nav>
+
+        <form action={archiveItem.bind(null, item.id)} className="shrink-0">
+          <button
+            type="submit"
+            title="Mục này sẽ không còn hiện trong danh sách. Dữ liệu vẫn được giữ lại."
+            className="inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-danger/10 hover:text-danger"
+          >
+            <Archive size={14} />
+            <span>Ẩn khỏi danh sách</span>
+          </button>
         </form>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-3">
+      {/* Bố cục studio 2 cột: tài liệu chính + AI Copilot bên phải */}
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
+        <div className="lg:col-span-7 xl:col-span-8">
           <ItemEditor
             item={{
               id: item.id,
@@ -52,34 +68,35 @@ export default async function ItemPage({ params }: PageProps<"/items/[id]">) {
               priority: item.priority,
               dueAt: item.dueAt ? toDateInput(item.dueAt) : null,
             }}
+            typeLabel={mod?.label ?? item.type}
+            tags={tags}
+            createdLabel={formatDateTime(item.createdAt)}
+            updatedLabel={formatDateTime(item.updatedAt)}
           />
-          {tags.length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-1.5">
-              {tags.map((t) => (
-                <Badge key={t} tone="accent">
-                  #{t}
-                </Badge>
-              ))}
-            </div>
-          )}
-          <p className="mt-4 text-xs text-muted-foreground">
-            Tạo {formatDateTime(item.createdAt)} · Sửa lần cuối {formatDateTime(item.updatedAt)}
-          </p>
         </div>
 
-        <aside className="space-y-4 lg:col-span-2">
+        <aside className="space-y-4 lg:sticky lg:top-6 lg:col-span-5 xl:col-span-4">
           <ItemAIPanel itemId={item.id} actions={actions} />
           {linked.length > 0 && (
-            <Card className="p-4">
-              <div className="mb-2 flex items-center gap-2 text-sm font-medium">
-                <Link2 size={14} /> Liên kết
+            <Card className="rounded-3xl border-border/80 p-5 shadow-[0_2px_16px_-6px_rgba(0,0,0,0.06)]">
+              <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                <Link2 size={14} className="text-primary" /> Mục liên kết ({linked.length})
               </div>
-              <ul className="space-y-1.5">
+              <ul className="space-y-2">
                 {linked.map((l) => (
-                  <li key={l.id} className="flex items-center gap-2 text-sm">
-                    <Badge>{LINK_LABEL[l.kind] ?? l.kind}</Badge>
-                    <Link href={`/items/${l.id}`} className="truncate hover:text-primary">
-                      {l.title}
+                  <li key={l.id}>
+                    <Link
+                      href={`/items/${l.id}`}
+                      className="group flex items-center justify-between gap-2 rounded-2xl border border-border/70 bg-muted/25 px-3 py-2.5 text-sm transition-all hover:border-primary/40 hover:bg-muted/60"
+                    >
+                      <span className="flex min-w-0 items-center gap-2">
+                        <Badge>{LINK_LABEL[l.kind] ?? l.kind}</Badge>
+                        <span className="truncate font-semibold text-foreground group-hover:text-primary">{l.title}</span>
+                      </span>
+                      <ArrowUpRight
+                        size={14}
+                        className="shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-primary"
+                      />
                     </Link>
                   </li>
                 ))}
@@ -88,7 +105,7 @@ export default async function ItemPage({ params }: PageProps<"/items/[id]">) {
           )}
         </aside>
       </div>
-    </>
+    </div>
   );
 }
 

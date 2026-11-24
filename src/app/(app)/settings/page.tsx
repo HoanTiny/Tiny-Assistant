@@ -1,119 +1,140 @@
 import type { Metadata } from "next";
 import { desc, eq } from "drizzle-orm";
+import { KeyRound, Mail, ShieldCheck, Sparkles, UserRound } from "lucide-react";
 import { requireUser } from "@/lib/auth/dal";
 import { getDb, schema } from "@/lib/db";
 import { getProvider } from "@/lib/ai";
-import { Badge, Card, EmptyState, PageHeader } from "@/components/ui";
-import { formatDateTime, formatNumber } from "@/lib/utils";
+import { Badge, Card, PageHeader } from "@/components/ui";
+import { formatNumber } from "@/lib/utils";
+import { AIDashboard, type CallRecord } from "./ai-dashboard";
 
 export const metadata: Metadata = { title: "Cài đặt" };
 
 export default async function SettingsPage() {
   const user = await requireUser();
   const db = await getDb();
-  const calls = await db
+  const rawCalls = await db
     .select()
     .from(schema.aiCalls)
     .where(eq(schema.aiCalls.workspaceId, user.workspaceId))
     .orderBy(desc(schema.aiCalls.createdAt))
-    .limit(50);
+    .limit(500);
+
+  const calls: CallRecord[] = rawCalls.map((c) => ({
+    id: c.id,
+    provider: c.provider,
+    model: c.model,
+    feature: c.feature,
+    inputTokens: c.inputTokens,
+    outputTokens: c.outputTokens,
+    durationMs: c.durationMs,
+    status: c.status,
+    error: c.error,
+    createdAt: c.createdAt.toISOString(),
+  }));
+
+  const countByProvider = new Map<string, number>();
+  for (const c of calls) countByProvider.set(c.provider, (countByProvider.get(c.provider) ?? 0) + 1);
 
   const providers = (["openai", "gemini"] as const).map((id) => {
     const p = getProvider(id);
-    return { id, label: p.label, configured: p.isConfigured(), defaultModel: p.defaultModel() };
+    return {
+      id,
+      label: p.label,
+      configured: p.isConfigured(),
+      defaultModel: p.defaultModel(),
+      calls: countByProvider.get(id) ?? 0,
+    };
   });
 
-  return (
-    <>
-      <PageHeader title="Cài đặt" />
+  const initials = user.name
+    .trim()
+    .split(/\s+/)
+    .slice(-2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("");
 
-      <section className="mb-8">
-        <h2 className="mb-3 font-medium">Tài khoản</h2>
-        <Card className="grid gap-2 p-4 text-sm sm:grid-cols-3">
-          <Field label="Tên" value={user.name} />
-          <Field label="Email" value={user.email} />
-          <Field label="Workspace" value={`${user.workspaceName} (${user.role})`} />
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        title="Cài đặt & Thống kê AI"
+        description="Quản lý tài khoản, trạng thái kết nối các hãng AI và theo dõi chi tiết hiệu suất, lưu lượng token."
+      />
+
+      {/* Hàng đầu: Tài khoản + Trạng thái Hãng AI */}
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+        <Card className="flex flex-col justify-between p-5 xl:col-span-5">
+          <div className="flex items-center gap-4">
+            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#2a85ff] to-[#6366f1] text-lg font-bold text-white shadow-xs">
+              {initials || <UserRound size={22} />}
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="truncate text-lg font-bold text-foreground">{user.name}</h2>
+                <Badge tone="accent">{user.role}</Badge>
+              </div>
+              <div className="mt-1 flex items-center gap-1.5 truncate text-xs text-muted-foreground">
+                <Mail size={13} className="shrink-0" />
+                <span className="truncate">{user.email}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 flex items-center justify-between rounded-xl bg-muted/60 px-3.5 py-2.5 text-xs">
+            <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+              <ShieldCheck size={14} className="text-primary" />
+              Workspace
+            </span>
+            <span className="font-bold text-foreground">{user.workspaceName}</span>
+          </div>
         </Card>
-      </section>
 
-      <section className="mb-8">
-        <h2 className="mb-1 font-medium">Hãng AI</h2>
-        <p className="mb-3 text-sm text-muted-foreground">
-          API key đặt trong file <code>.env.local</code> (không lưu trong database, không gửi xuống trình duyệt). Sửa xong cần
-          khởi động lại app.
-        </p>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {providers.map((p) => (
-            <Card key={p.id} className="p-4">
-              <div className="flex items-center justify-between">
-                <span className="font-medium">{p.label}</span>
-                {p.configured ? <Badge tone="success">Đã có key</Badge> : <Badge tone="warning">Chưa có key</Badge>}
+        <Card className="p-5 xl:col-span-7">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <KeyRound size={16} className="text-primary" />
+              <h2 className="text-base font-bold">Kết nối hãng AI</h2>
+            </div>
+            <span className="text-xs text-muted-foreground">
+              Cấu hình API key trong <code className="rounded bg-muted px-1.5 py-0.5">.env.local</code>
+            </span>
+          </div>
+
+          <div className="mt-3.5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {providers.map((p) => (
+              <div
+                key={p.id}
+                className="flex flex-col justify-between rounded-2xl border border-border/80 bg-muted/35 p-3.5 transition-colors hover:bg-muted/60"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="inline-flex items-center gap-2 font-bold text-foreground">
+                    <span
+                      className={
+                        p.id === "gemini"
+                          ? "flex h-7 w-7 items-center justify-center rounded-xl bg-sky-100 text-[#2a85ff]"
+                          : "flex h-7 w-7 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600"
+                      }
+                    >
+                      <Sparkles size={14} />
+                    </span>
+                    {p.label}
+                  </span>
+                  {p.configured ? <Badge tone="success">Đã có key</Badge> : <Badge tone="warning">Chưa có key</Badge>}
+                </div>
+                <div className="mt-3 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                  <span className="truncate">
+                    Mặc định: <code className="font-semibold text-foreground">{p.defaultModel}</code>
+                  </span>
+                  <span className="shrink-0 font-semibold tabular-nums text-foreground">{formatNumber(p.calls)} lượt</span>
+                </div>
               </div>
-              <div className="mt-2 text-sm text-muted-foreground">
-                Model mặc định: <code>{p.defaultModel}</code>
-              </div>
-            </Card>
-          ))}
-        </div>
-      </section>
+            ))}
+          </div>
+        </Card>
+      </div>
 
-      <section>
-        <h2 className="mb-3 font-medium">Nhật ký gọi AI (50 lần gần nhất)</h2>
-        {calls.length === 0 ? (
-          <EmptyState>Chưa có lần gọi AI nào.</EmptyState>
-        ) : (
-          <Card className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="border-b text-left text-xs text-muted-foreground">
-                <tr>
-                  <th className="px-4 py-2 font-medium">Thời gian</th>
-                  <th className="px-4 py-2 font-medium">Tính năng</th>
-                  <th className="px-4 py-2 font-medium">Model</th>
-                  <th className="px-4 py-2 text-right font-medium">Token vào/ra</th>
-                  <th className="px-4 py-2 text-right font-medium">Thời gian chạy</th>
-                  <th className="px-4 py-2 font-medium">Kết quả</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {calls.map((c) => (
-                  <tr key={c.id}>
-                    <td className="whitespace-nowrap px-4 py-2">{formatDateTime(c.createdAt)}</td>
-                    <td className="px-4 py-2">{c.feature}</td>
-                    <td className="whitespace-nowrap px-4 py-2">
-                      <span className="text-muted-foreground">{c.provider}/</span>
-                      {c.model}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-2 text-right tabular-nums">
-                      {formatNumber(c.inputTokens)} / {formatNumber(c.outputTokens)}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-2 text-right tabular-nums">{(c.durationMs / 1000).toFixed(1)}s</td>
-                    <td className="px-4 py-2">
-                      {c.status === "ok" ? (
-                        <Badge tone="success">OK</Badge>
-                      ) : c.status === "aborted" ? (
-                        <Badge>Đã dừng</Badge>
-                      ) : (
-                        <Badge tone="danger" title={c.error ?? ""}>
-                          Lỗi
-                        </Badge>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </Card>
-        )}
-      </section>
-    </>
-  );
-}
-
-function Field({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="truncate">{value}</div>
+      {/* Dashboard KPI, biểu đồ & nhật ký lọc được */}
+      <AIDashboard calls={calls} />
     </div>
   );
 }

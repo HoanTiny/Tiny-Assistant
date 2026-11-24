@@ -10,7 +10,7 @@
  * Không có công cụ xóa dữ liệu.
  */
 import "server-only";
-import type { AgentTool } from "@/lib/ai";
+import { canWebSearch, webSearch, type AgentTool } from "@/lib/ai";
 import type { Item } from "@/lib/db/schema";
 import {
   addItemTags,
@@ -24,6 +24,7 @@ import {
   type TaskFilter,
 } from "@/lib/items";
 import { dateContextForAI, parseLocalDateTime, toLocalIso } from "@/lib/time";
+import { fetchWeather } from "@/lib/weather";
 
 const TASK_FILTERS: TaskFilter[] = ["overdue", "today", "next_7_days", "doing", "open", "high_priority", "done_last_7_days"];
 const FILTER_LABEL: Record<TaskFilter, string> = {
@@ -192,19 +193,57 @@ export function buildAgentTools(ctx: Ctx): AgentTool[] {
         return { ok: true, id: item.id, link: `/items/${item.id}` };
       },
     },
+    {
+      name: "get_weather",
+      description:
+        "Xem thời tiết thực tế hiện tại và dự báo 1–10 ngày tới cho một địa điểm/thành phố (ví dụ: Hà Nội, TP.HCM, Đà Nẵng, Tokyo...). Luôn gọi công cụ này khi người dùng hỏi về thời tiết, không tự đoán.",
+      parameters: {
+        type: "object",
+        properties: {
+          location: { type: "string", description: "Tên thành phố hoặc địa điểm, ví dụ: Hà Nội, TP.HCM, Đà Nẵng" },
+          days: { type: "integer", minimum: 1, maximum: 10, description: "Số ngày dự báo (mặc định 5)" },
+        },
+        required: ["location"],
+      },
+      label: (a) => `Xem thời tiết ${short(String(a.location ?? ""))}`,
+      run: async (a, signal) => fetchWeather(String(a.location ?? ""), num(a.days) ?? 5, signal),
+    },
+    ...(canWebSearch()
+      ? [
+          {
+            name: "web_search",
+            description:
+              "Tìm kiếm thông tin thực tế mới nhất trên Google (tin tức hôm nay, tỷ giá, giá vàng, sự kiện, kết quả thể thao, thông tin công nghệ/sản phẩm mới...). Không dùng cho dữ liệu trong WorkHub; với thời tiết hãy ưu tiên get_weather.",
+            parameters: {
+              type: "object",
+              properties: {
+                query: { type: "string", description: "Câu truy vấn tìm kiếm rõ ràng, có thể kèm ngày/địa điểm nếu cần" },
+              },
+              required: ["query"],
+            },
+            label: (a: Record<string, unknown>) => `Tìm kiếm “${short(String(a.query ?? ""))}”`,
+            run: async (a: Record<string, unknown>, signal?: AbortSignal) =>
+              webSearch(String(a.query ?? ""), { id: ctx.userId, workspaceId: ctx.workspaceId }, signal),
+          } satisfies AgentTool,
+        ]
+      : []),
   ];
 }
 
 export function agentSystemPrompt(userName: string): string {
+  const searchNote = canWebSearch()
+    ? "\n- Khi câu hỏi cần thông tin thực tế mới nhất trên Internet (tin tức, tỷ giá, giá vàng, sự kiện, lịch thi đấu, kiến thức mới...), LUÔN gọi web_search để tra cứu, không đoán hay bịa. Có thể kèm đường dẫn nguồn ngắn gọn nếu hữu ích."
+    : "";
   return `Bạn là trợ lý làm việc cá nhân của ${userName} trong ứng dụng WorkHub.
 Trả lời bằng tiếng Việt, ngắn gọn, trình bày Markdown (gạch đầu dòng, in đậm ý chính).
 
-Bạn có công cụ để đọc và ghi công việc, ghi chú của người dùng:
-- Khi câu hỏi liên quan đến dữ liệu của họ (việc, hạn, ghi chú, kế hoạch), LUÔN dùng công cụ để xem dữ liệu thật, không đoán.
+Bạn có công cụ để đọc/ghi công việc, ghi chú và tra cứu thông tin thực tế:
+- Khi câu hỏi liên quan đến dữ liệu của người dùng (việc, hạn, ghi chú, kế hoạch), LUÔN dùng công cụ để xem dữ liệu thật, không đoán.
 - Khi được nhờ tạo/sửa, làm đúng yêu cầu rồi báo lại ngắn gọn đã làm gì. Nếu yêu cầu mơ hồ, hỏi lại trước khi ghi.
 - Chỉ dùng id lấy từ kết quả công cụ, không tự bịa id. KHÔNG hiển thị id cho người dùng: gọi mục bằng tiêu đề (thêm hạn chót nếu cần phân biệt).
 - Khi lập kế hoạch, ưu tiên: việc quá hạn → hạn hôm nay → ưu tiên cao → còn lại; ước lượng thời gian hợp lý.
 - Khi nhắc tới một mục, ghi đúng tiêu đề của nó.
+- Khi người dùng hỏi thời tiết, LUÔN gọi get_weather để lấy dự báo thực tế (nếu chưa rõ thành phố thì hỏi ngắn gọn 1 câu trước khi gọi).${searchNote}
 
 ${dateContextForAI()}`;
 }

@@ -24,14 +24,16 @@ export type ModuleDef = {
   icon: LucideIcon;
   /** Giá trị `items.type` mà module này quản lý */
   itemType?: string;
+  /** Nhóm trên thanh bên */
+  group?: string;
 };
 
 export const MODULES: ModuleDef[] = [
-  { key: "dashboard", label: "Tổng quan", href: "/", icon: LayoutDashboard },
-  { key: "brief", label: "Bản tin", href: "/brief", icon: Newspaper, itemType: "brief" },
-  { key: "tasks", label: "Công việc", href: "/tasks", icon: CheckSquare, itemType: "task" },
-  { key: "notes", label: "Ghi chú", href: "/notes", icon: NotebookPen, itemType: "note" },
-  { key: "ai", label: "Trợ lý AI", href: "/ai", icon: Sparkles },
+  { key: "dashboard", label: "Tổng quan", href: "/", icon: LayoutDashboard, group: "Chung" },
+  { key: "brief", label: "Bản tin", href: "/brief", icon: Newspaper, itemType: "brief", group: "Chung" },
+  { key: "tasks", label: "Công việc", href: "/tasks", icon: CheckSquare, itemType: "task", group: "Quản lý" },
+  { key: "notes", label: "Ghi chú", href: "/notes", icon: NotebookPen, itemType: "note", group: "Quản lý" },
+  { key: "ai", label: "Trợ lý AI", href: "/ai", icon: Sparkles, group: "Trợ lý" },
 ];
 
 export const SYSTEM_LINKS: ModuleDef[] = [

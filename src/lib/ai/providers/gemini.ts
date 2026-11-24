@@ -36,7 +36,7 @@ export const geminiProvider: AIProvider = {
       const id = m.name?.replace(/^models\//, "");
       if (!id || !id.startsWith("gemini")) continue;
       if (m.supportedActions && !m.supportedActions.includes("generateContent")) continue;
-      if (/(embedding|image|banana|tts|audio|live|omni)/i.test(id)) continue;
+      if (/(embedding|image|banana|tts|audio|live|omni|robotics|computer-use|deep-research|veo)/i.test(id)) continue;
       ids.push(id);
     }
     return ids.sort().reverse();
@@ -132,3 +132,56 @@ export const geminiProvider: AIProvider = {
     };
   },
 };
+
+/**
+ * Tìm kiếm web thời gian thực bằng Google Search Grounding của Gemini.
+ * Dùng làm công cụ nội bộ để mọi model (kể cả OpenAI) đều có thể tra cứu mạng khi cần.
+ */
+export async function geminiWebSearch(
+  query: string,
+  signal?: AbortSignal,
+): Promise<{
+  model: string;
+  answer: string;
+  sources: { title: string; url: string }[];
+  inputTokens: number;
+  outputTokens: number;
+}> {
+  const model = process.env.GEMINI_SEARCH_MODEL || geminiProvider.defaultModel();
+  const res = await getClient().models.generateContent({
+    model,
+    contents: [{ role: "user", parts: [{ text: query }] }],
+    config: {
+      systemInstruction:
+        "Bạn là công cụ tìm kiếm web cho trợ lý cá nhân. Hãy tra cứu Google Search và tóm tắt kết quả mới nhất, chính xác bằng tiếng Việt, ghi rõ ngày giờ và số liệu cụ thể nếu có. Không tự bịa thông tin.",
+      tools: [{ googleSearch: {} }],
+      abortSignal: signal,
+    },
+  });
+
+  const candidate = res.candidates?.[0];
+  const answer = (candidate?.content?.parts ?? [])
+    .filter((p) => p.text && !p.thought)
+    .map((p) => p.text)
+    .join("")
+    .trim();
+
+  const seen = new Set<string>();
+  const sources: { title: string; url: string }[] = [];
+  for (const chunk of candidate?.groundingMetadata?.groundingChunks ?? []) {
+    const url = chunk.web?.uri;
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    sources.push({ title: chunk.web?.title || url, url });
+    if (sources.length >= 6) break;
+  }
+
+  const u = res.usageMetadata;
+  return {
+    model,
+    answer,
+    sources,
+    inputTokens: u?.promptTokenCount ?? 0,
+    outputTokens: (u?.candidatesTokenCount ?? 0) + (u?.thoughtsTokenCount ?? 0),
+  };
+}

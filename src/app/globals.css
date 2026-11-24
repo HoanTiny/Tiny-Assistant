@@ -1,106 +1,261 @@
 @import "tailwindcss";
 
-/* Bảng màu dùng chung (đổi ở đây để đổi giao diện toàn app) */
+/* Biến thể dark: dùng khi người dùng chọn chế độ tối, hoặc máy đang tối và người dùng không cố định chế độ sáng */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) {
+      @slot;
+    }
+  }
+}
+
+/*
+ * Giao diện WorkHub: phong cách admin hiện đại (lấy cảm hứng từ Ecme).
+ * Nền xám trung tính, thẻ trắng bo tròn, xanh dương làm màu chính, font Inter.
+ * Mặc định theo cài đặt sáng/tối của máy; người dùng có thể chọn cố định (data-theme trên <html>).
+ */
+
 :root {
-  --background: #fafaf9;
-  --foreground: #1c1917;
+  --background: #f5f5f5;
+  --foreground: #171717;
   --card: #ffffff;
-  --muted: #f5f5f4;
-  --muted-foreground: #78716c;
-  --border: #e7e5e4;
-  --primary: #4f46e5;
+  --sidebar: #ffffff;
+  --muted: #f5f5f5;
+  --muted-foreground: #737373;
+  --border: #e5e5e5;
+  --border-strong: #d4d4d4;
+  --primary: #2a85ff;
+  --primary-hover: #4996ff;
   --primary-foreground: #ffffff;
-  --accent: #eef2ff;
-  --accent-foreground: #3730a3;
-  --danger: #dc2626;
-  --success: #16a34a;
-  --warning: #d97706;
+  --accent: #2a85ff1a;
+  --accent-foreground: #2a85ff;
+  --rule: #2a85ff;
+  --danger: #ff6a55;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --field: #f5f5f5;
+  --hover: #f5f5f5;
+  --elevated-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  /* Ô màu nền cho icon thẻ số liệu */
+  --tint-blue: #eaf3ff;
+  --tint-blue-fg: #2a85ff;
+  --tint-green: #e7f8f1;
+  --tint-green-fg: #10b981;
+  --tint-amber: #fef4e2;
+  --tint-amber-fg: #e58a00;
+  --tint-violet: #f1ecfe;
+  --tint-violet-fg: #8b5cf6;
+  --tint-rose: #fdebec;
+  --tint-rose-fg: #ef4444;
+  color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0c0a09;
-    --foreground: #f5f5f4;
-    --card: #1c1917;
-    --muted: #292524;
-    --muted-foreground: #a8a29e;
-    --border: #2e2a27;
-    --primary: #818cf8;
-    --primary-foreground: #0c0a09;
-    --accent: #1e1b4b;
-    --accent-foreground: #c7d2fe;
-    --danger: #f87171;
-    --success: #4ade80;
-    --warning: #fbbf24;
+  :root:not([data-theme="light"]) {
+    --background: #0a0a0a;
+    --foreground: #f5f5f5;
+    --card: #262626;
+    --sidebar: #262626;
+    --muted: #404040;
+    --muted-foreground: #a3a3a3;
+    --border: #404040;
+    --border-strong: #525252;
+    --primary: #2a85ff;
+    --primary-hover: #4996ff;
+    --primary-foreground: #ffffff;
+    --accent: #2a85ff1a;
+    --accent-foreground: #4996ff;
+    --rule: #2a85ff;
+    --danger: #ff6a55;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --field: #404040;
+    --hover: #404040;
+    --elevated-shadow: 0 12px 32px -18px rgb(0 0 0 / 0.7);
+    --tint-blue: #1c2c44;
+    --tint-blue-fg: #7ab4ff;
+    --tint-green: #16332a;
+    --tint-green-fg: #34d399;
+    --tint-amber: #3a2d14;
+    --tint-amber-fg: #fbbf24;
+    --tint-violet: #2c2342;
+    --tint-violet-fg: #b39bfa;
+    --tint-rose: #3b1e20;
+    --tint-rose-fg: #f87171;
+    color-scheme: dark;
   }
+}
+
+:root[data-theme="dark"] {
+  --background: #0a0a0a;
+  --foreground: #f5f5f5;
+  --card: #262626;
+  --sidebar: #262626;
+  --muted: #404040;
+  --muted-foreground: #a3a3a3;
+  --border: #404040;
+  --border-strong: #525252;
+  --primary: #2a85ff;
+  --primary-hover: #4996ff;
+  --primary-foreground: #ffffff;
+  --accent: #2a85ff1a;
+  --accent-foreground: #4996ff;
+  --rule: #2a85ff;
+  --danger: #ff6a55;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --field: #404040;
+  --hover: #404040;
+  --elevated-shadow: 0 12px 32px -18px rgb(0 0 0 / 0.7);
+  --tint-blue: #1c2c44;
+  --tint-blue-fg: #7ab4ff;
+  --tint-green: #16332a;
+  --tint-green-fg: #34d399;
+  --tint-amber: #3a2d14;
+  --tint-amber-fg: #fbbf24;
+  --tint-violet: #2c2342;
+  --tint-violet-fg: #b39bfa;
+  --tint-rose: #3b1e20;
+  --tint-rose-fg: #f87171;
+  color-scheme: dark;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
+  --color-sidebar: var(--sidebar);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
   --color-primary-foreground: var(--primary-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-rule: var(--rule);
   --color-danger: var(--danger);
   --color-success: var(--success);
   --color-warning: var(--warning);
-  --font-sans: var(--font-inter);
+  --color-field: var(--field);
+  --color-hover: var(--hover);
+  --font-sans: var(--font-sans-face);
+  --shadow-elevated: var(--elevated-shadow);
+}
+
+@layer base {
+  /* Trong layer base để các class màu viền, outline của Tailwind vẫn đè lên được */
+  *,
+  ::before,
+  ::after {
+    border-color: var(--border);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
+::selection {
+  background: color-mix(in srgb, var(--primary) 22%, transparent);
+}
+
+/* Tiêu đề: Inter đậm */
+.font-display {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Bản tin: cỡ chữ đọc thoải mái */
+.letter {
+  font-size: 0.9375rem;
+}
+
+/* Thanh cuộn mảnh */
 * {
-  border-color: var(--border);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Hiển thị Markdown (kết quả AI, nội dung ghi chú) */
 .markdown {
-  line-height: 1.65;
+  line-height: 1.7;
   overflow-wrap: anywhere;
 }
 .markdown > * + * {
-  margin-top: 0.75em;
+  margin-top: 0.7em;
 }
 .markdown h1,
 .markdown h2,
 .markdown h3 {
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   line-height: 1.3;
-  margin-top: 1.2em;
+  margin-top: 1.3em;
 }
-.markdown h1 { font-size: 1.25rem; }
-.markdown h2 { font-size: 1.125rem; }
-.markdown h3 { font-size: 1rem; }
-.markdown ul { list-style: disc; padding-left: 1.4em; }
-.markdown ol { list-style: decimal; padding-left: 1.4em; }
-.markdown li + li { margin-top: 0.25em; }
-.markdown a { color: var(--primary); text-decoration: underline; }
+.markdown > :first-child {
+  margin-top: 0;
+}
+.markdown h1 { font-size: 1.25em; }
+.markdown h2 { font-size: 1.1em; }
+.markdown h3 { font-size: 1em; }
+.markdown ul { list-style: disc; padding-left: 1.3em; }
+.markdown ol { list-style: decimal; padding-left: 1.3em; }
+.markdown li::marker { color: var(--primary); }
+.markdown li + li { margin-top: 0.3em; }
+.markdown strong { font-weight: 600; }
+.markdown a { color: var(--primary); text-decoration: underline; text-underline-offset: 2px; }
 .markdown code {
   background: var(--muted);
-  border-radius: 4px;
+  border-radius: 6px;
   padding: 0.1em 0.35em;
   font-size: 0.875em;
 }
 .markdown pre {
   background: var(--muted);
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 0.75em 1em;
   overflow-x: auto;
 }
 .markdown pre code { background: none; padding: 0; }
 .markdown blockquote {
-  border-left: 3px solid var(--border);
+  border-left: 3px solid var(--primary);
   padding-left: 0.9em;
   color: var(--muted-foreground);
 }
+.markdown hr { border-top: 1px solid var(--border); }
 .markdown table { border-collapse: collapse; display: block; overflow-x: auto; }
 .markdown th,
-.markdown td { border: 1px solid var(--border); padding: 0.35em 0.6em; text-align: left; }
+.markdown td { border: 1px solid var(--border); padding: 0.4em 0.7em; text-align: left; }
+.markdown input[type="checkbox"] { accent-color: var(--primary); margin-right: 0.4em; }
+
+/* Mũi tên cho ô chọn (select) để người dùng biết bấm vào sẽ xổ danh sách */
+.select-chevron {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23737373' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.85rem center;
+  background-size: 1rem;
+}
