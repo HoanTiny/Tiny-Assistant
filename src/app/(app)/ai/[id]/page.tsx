@@ -1,11 +1,12 @@
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { and, asc, eq } from "drizzle-orm";
 import { requireUser } from "@/lib/auth/dal";
 import { getDb, schema } from "@/lib/db";
 import { ChatView } from "@/components/ai/chat-view";
 import { getRecentConversations } from "../conversations";
 
-export default async function ConversationPage({ params }: PageProps<"/ai/[id]">) {
+async function ConversationContent({ params }: { params: PageProps<"/ai/[id]">["params"] }) {
   const { id } = await params;
   const user = await requireUser();
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
@@ -36,5 +37,15 @@ export default async function ConversationPage({ params }: PageProps<"/ai/[id]">
       conversations={conversations}
       initialMessages={messages.map(({ meta, ...m }) => ({ ...m, tools: meta.tools }))}
     />
+  );
+}
+
+export default function ConversationPage({ params }: PageProps<"/ai/[id]">) {
+  return (
+    <Suspense
+      fallback={<div className="h-[calc(100vh-7.5rem)] min-h-[560px] w-full animate-pulse rounded-3xl bg-muted" aria-busy="true" />}
+    >
+      <ConversationContent params={params} />
+    </Suspense>
   );
 }

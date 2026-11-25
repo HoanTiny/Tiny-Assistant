@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getCurrentUser, hasAnyUser } from "@/lib/auth/dal";
 import { login } from "../actions";
 import { AuthForm } from "../auth-form";
+import Loading from "../loading";
 
 export const metadata: Metadata = { title: "Đăng nhập" };
 
-export default async function LoginPage() {
+async function LoginContent() {
   if (await getCurrentUser()) redirect("/");
   if (!(await hasAnyUser())) redirect("/setup");
 
@@ -21,5 +23,13 @@ export default async function LoginPage() {
         { name: "password", label: "Mật khẩu", type: "password", autoComplete: "current-password" },
       ]}
     />
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <LoginContent />
+    </Suspense>
   );
 }

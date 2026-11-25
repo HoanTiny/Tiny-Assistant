@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { desc, eq } from "drizzle-orm";
 import { KeyRound, Mail, ShieldCheck, Sparkles, UserRound } from "lucide-react";
 import { requireUser } from "@/lib/auth/dal";
@@ -10,7 +11,7 @@ import { AIDashboard, type CallRecord } from "./ai-dashboard";
 
 export const metadata: Metadata = { title: "Cài đặt" };
 
-export default async function SettingsPage() {
+async function SettingsContent() {
   const user = await requireUser();
   const db = await getDb();
   const rawCalls = await db
@@ -55,12 +56,7 @@ export default async function SettingsPage() {
     .join("");
 
   return (
-    <div className="flex flex-col gap-4">
-      <PageHeader
-        title="Cài đặt & Thống kê AI"
-        description="Quản lý tài khoản, trạng thái kết nối các hãng AI và theo dõi chi tiết hiệu suất, lưu lượng token."
-      />
-
+    <>
       {/* Hàng đầu: Tài khoản + Trạng thái Hãng AI */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
         <Card className="flex flex-col justify-between p-5 xl:col-span-5">
@@ -135,6 +131,32 @@ export default async function SettingsPage() {
 
       {/* Dashboard KPI, biểu đồ & nhật ký lọc được */}
       <AIDashboard calls={calls} />
+    </>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        title="Cài đặt & Thống kê AI"
+        description="Quản lý tài khoản, trạng thái kết nối các hãng AI và theo dõi chi tiết hiệu suất, lưu lượng token."
+      />
+      <Suspense
+        fallback={
+          <div className="space-y-4" aria-busy="true">
+            <div className="h-36 animate-pulse rounded-2xl bg-muted" />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {Array.from({ length: 4 }, (_, idx) => (
+                <div key={idx} className="h-28 animate-pulse rounded-2xl bg-muted" />
+              ))}
+            </div>
+            <div className="h-72 animate-pulse rounded-2xl bg-muted" />
+          </div>
+        }
+      >
+        <SettingsContent />
+      </Suspense>
     </div>
   );
 }

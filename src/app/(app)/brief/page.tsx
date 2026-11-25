@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { requireUser } from "@/lib/auth/dal";
 import { defaultProviderId } from "@/lib/ai";
 import { getCurrentBriefs, listBriefs } from "@/lib/brief";
@@ -12,25 +13,14 @@ export const metadata: Metadata = { title: "Bản tin" };
 const BRIEF_HOUR = Number(process.env.BRIEF_HOUR ?? 7);
 const WEEKDAY = ["Chủ nhật", "thứ 2", "thứ 3", "thứ 4", "thứ 5", "thứ 6", "thứ 7"][Number(process.env.WEEKLY_REVIEW_DAY ?? 1)] ?? "thứ 2";
 
-export default async function BriefPage() {
+async function BriefContent() {
   const user = await requireUser();
   const [{ daily, weekly }, history] = await Promise.all([getCurrentBriefs(user.workspaceId), listBriefs(user.workspaceId)]);
   const aiReady = defaultProviderId() !== null;
-  const auto = process.env.BRIEF_AUTO !== "off";
-
   const toProps = (i: typeof daily) => (i ? { id: i.id, content: i.content, updatedAt: i.updatedAt.toISOString() } : null);
 
   return (
     <>
-      <PageHeader
-        title="Bản tin"
-        description={
-          auto
-            ? `App tự tạo bản tin lúc ${BRIEF_HOUR}h mỗi sáng và tổng kết tuần vào ${WEEKDAY} (khi app đang chạy).`
-            : "Tự tạo theo lịch đang tắt (BRIEF_AUTO=off). Bạn vẫn có thể tạo thủ công."
-        }
-      />
-
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <BriefPanel
           kind="daily"
@@ -66,6 +56,32 @@ export default async function BriefPage() {
           </Card>
         )}
       </section>
+    </>
+  );
+}
+
+export default function BriefPage() {
+  const auto = process.env.BRIEF_AUTO !== "off";
+  return (
+    <>
+      <PageHeader
+        title="Bản tin"
+        description={
+          auto
+            ? `App tự tạo bản tin lúc ${BRIEF_HOUR}h mỗi sáng và tổng kết tuần vào ${WEEKDAY} (khi app đang chạy).`
+            : "Tự tạo theo lịch đang tắt (BRIEF_AUTO=off). Bạn vẫn có thể tạo thủ công."
+        }
+      />
+      <Suspense
+        fallback={
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2" aria-busy="true">
+            <div className="h-56 animate-pulse rounded-2xl bg-muted" />
+            <div className="h-56 animate-pulse rounded-2xl bg-muted" />
+          </div>
+        }
+      >
+        <BriefContent />
+      </Suspense>
     </>
   );
 }

@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { Lock } from "lucide-react";
 import { getCurrentUser, hasAnyUser } from "@/lib/auth/dal";
 import { setupGuard } from "@/lib/auth/guards";
 import { setupOwner } from "../actions";
 import { AuthForm } from "../auth-form";
+import Loading from "../loading";
 
 export const metadata: Metadata = { title: "Thiết lập" };
 
-export default async function SetupPage() {
+async function SetupContent() {
   if (await getCurrentUser()) redirect("/");
   if (await hasAnyUser()) redirect("/login");
 
@@ -45,5 +47,13 @@ export default async function SetupPage() {
         { name: "password", label: "Mật khẩu (tối thiểu 8 ký tự)", type: "password", autoComplete: "new-password" },
       ]}
     />
+  );
+}
+
+export default function SetupPage() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <SetupContent />
+    </Suspense>
   );
 }

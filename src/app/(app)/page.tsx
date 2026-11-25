@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { and, count, eq, gte, sql, sum } from "drizzle-orm";
 import { AlarmClock, CalendarDays, CheckCheck, CheckSquare, ListTodo, NotebookPen, Sparkles } from "lucide-react";
 import { requireUser } from "@/lib/auth/dal";
@@ -10,6 +11,7 @@ import { moduleForItemType, PRIORITIES } from "@/lib/modules";
 import { Badge, Card, CardTitle, EmptyState, StatTile, buttonClass, priorityTone } from "@/components/ui";
 import { cn, formatDateTime, formatDue, formatNumber } from "@/lib/utils";
 import { addDays, endOfDay, weekdayName } from "@/lib/time";
+import Loading from "./loading";
 import { TaskStatusButton } from "./tasks/task-status-button";
 
 const ACTION_LABEL: Record<string, string> = {
@@ -17,7 +19,7 @@ const ACTION_LABEL: Record<string, string> = {
   "item.updated": "đã cập nhật",
 };
 
-export default async function DashboardPage() {
+async function DashboardContent() {
   const user = await requireUser();
   const db = await getDb();
   const { aiCalls } = schema;
@@ -256,5 +258,13 @@ export default async function DashboardPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <DashboardContent />
+    </Suspense>
   );
 }
